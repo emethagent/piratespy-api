@@ -1,6 +1,7 @@
 const express = require('express');
 const { pool } = require('../db/pool');
 const { writeLimiter } = require('../middleware/rateLimiter');
+const { enqueueArchive } = require('../services/mediaArchiver');
 
 const router = express.Router();
 
@@ -127,6 +128,14 @@ router.post('/', writeLimiter, async (req, res) => {
     }
 
     await client.query('COMMIT');
+
+    // Queue media archiving in background (non-blocking)
+    for (const ad of ads) {
+      if (ad.ad_archive_id && ad.media_assets?.length > 0) {
+        enqueueArchive(ad.ad_archive_id);
+      }
+    }
+
     res.json({ saved, collations: Object.keys(collations).length });
   } catch (err) {
     await client.query('ROLLBACK');
