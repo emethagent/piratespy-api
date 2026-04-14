@@ -38,6 +38,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Bootstrap: create first admin (one-time, requires BOOTSTRAP_KEY env var)
+app.post('/bootstrap', async (req, res) => {
+  const { key, email, password } = req.body;
+  if (!key || key !== process.env.BOOTSTRAP_KEY) {
+    return res.status(403).json({ error: 'Invalid bootstrap key' });
+  }
+  const { pool } = require('./db/pool');
+  const bcrypt = require('bcryptjs');
+  const { rows: existing } = await pool.query('SELECT id FROM users LIMIT 1');
+  if (existing.length > 0) {
+    return res.status(409).json({ error: 'Already bootstrapped' });
+  }
+  const hash = await bcrypt.hash(password, 12);
+  const { rows: [user] } = await pool.query(
+    "INSERT INTO users (email, password_hash, role) VALUES ($1, $2, 'admin') RETURNING id, email, role",
+    [email, hash]
+  );
+  res.json({ user, message: 'Admin created. Delete BOOTSTRAP_KEY env var now.' });
+});
+
 // Auth routes (no JWT required)
 app.use('/api/auth', authRoutes);
 
