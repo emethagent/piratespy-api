@@ -36,21 +36,28 @@ async function fetchAdsCount(domain) {
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
 
-    // Block unnecessary resources for speed
+    // Block only images/media (keep stylesheets + scripts for React rendering)
     await page.setRequestInterception(true);
     page.on('request', (req) => {
       const type = req.resourceType();
-      if (['image', 'font', 'media', 'stylesheet'].includes(type)) return req.abort();
+      if (['image', 'font', 'media'].includes(type)) return req.abort();
       req.continue();
     });
 
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
 
-    // Wait for the heading to appear (up to 10s)
+    // Wait for results heading (React renders async)
     try {
-      await page.waitForSelector('div[role="heading"][aria-level="3"]', { timeout: 10000 });
+      await page.waitForFunction(
+        () => {
+          const h = document.querySelector('div[role="heading"][aria-level="3"]');
+          if (h && /\d/.test(h.textContent)) return true;
+          return /~?\d[\d\s,.]*\s*(?:résultats?|results?)/i.test(document.body.innerText);
+        },
+        { timeout: 15000 }
+      );
     } catch {
-      // Heading not found, try anyway
+      // Fallback — proceed with whatever we have
     }
 
     // Extract count from multiple strategies
