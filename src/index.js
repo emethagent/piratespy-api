@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const adsRoutes = require('./routes/ads');
 const adminRoutes = require('./routes/admin');
 const shopifyAppsRoutes = require('./routes/shopifyApps');
+const bookmarksRoutes = require('./routes/bookmarks');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,6 +69,7 @@ app.use('/api/apps', shopifyAppsRoutes);
 // Protected routes (JWT required)
 app.use('/api/ads', verifyJWT, adsRoutes);
 app.use('/api/admin', verifyJWT, adminRoutes);
+app.use('/api/bookmarks', verifyJWT, bookmarksRoutes);
 
 // 404
 app.use((req, res) => {
