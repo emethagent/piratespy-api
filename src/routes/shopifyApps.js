@@ -50,8 +50,7 @@ router.post('/data', async (req, res) => {
               WHEN LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) LIKE '%' || $1 || '%' THEN 80
               ELSE 0
             END AS score,
-            CASE WHEN review_count IS NOT NULL AND review_count != '' AND review_count ~ '^[0-9]+$'
-                 THEN CAST(review_count AS INTEGER) ELSE 0 END AS reviews
+            COALESCE(NULLIF(REGEXP_REPLACE(review_count, '[^0-9]', '', 'g'), '')::INTEGER, 0) AS reviews
           FROM shopify_apps
           WHERE LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) LIKE '%' || $1 || '%'
              OR $1 LIKE '%' || LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) || '%'
