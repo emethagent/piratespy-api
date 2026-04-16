@@ -26,18 +26,42 @@ router.post('/data', async (req, res) => {
       }
 
       const normalized = normalize(name);
+      // Extract words (for partial matching)
+      const words = name.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
 
-      // Search by normalized name match
+      // Try multiple matching strategies:
+      // 1. Exact normalized match (best)
+      // 2. app_name is contained in search (e.g. "loox" in "loox reviews")
+      // 3. Search is contained in app_name (e.g. "judgeme" in "judge-me-product-reviews")
+      // 4. Any word from search matches app_name
+      const wordPatterns = words.map((w) => `%${w}%`);
+
       const { rows } = await pool.query(`
-        SELECT app_name, app_url, review_count, review_rating, description,
-               prices, categories, logo_url, developer_name, developer_mail
-        FROM shopify_apps
-        WHERE LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) LIKE $1
-        ORDER BY
-          CASE WHEN LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) = $2 THEN 0 ELSE 1 END,
-          CASE WHEN review_count IS NOT NULL AND review_count != '' THEN CAST(review_count AS INTEGER) ELSE 0 END DESC
+        WITH candidates AS (
+          SELECT
+            app_name, app_url, review_count, review_rating, description,
+            prices, categories, logo_url, developer_name, developer_mail,
+            CASE
+              -- Exact normalized match
+              WHEN LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) = $1 THEN 100
+              -- app_name fully contained in search
+              WHEN $1 LIKE '%' || LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) || '%' THEN 90
+              -- search fully contained in app_name
+              WHEN LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) LIKE '%' || $1 || '%' THEN 80
+              ELSE 0
+            END AS score,
+            CASE WHEN review_count IS NOT NULL AND review_count != '' AND review_count ~ '^[0-9]+$'
+                 THEN CAST(review_count AS INTEGER) ELSE 0 END AS reviews
+          FROM shopify_apps
+          WHERE LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) LIKE '%' || $1 || '%'
+             OR $1 LIKE '%' || LOWER(REGEXP_REPLACE(app_name, '[^a-zA-Z0-9]', '', 'g')) || '%'
+             ${words.length > 0 ? `OR LOWER(app_name) ILIKE ANY($2::text[])` : ''}
+        )
+        SELECT * FROM candidates
+        WHERE score > 0 OR reviews > 0
+        ORDER BY score DESC, reviews DESC
         LIMIT 1
-      `, [`%${normalized}%`, normalized]);
+      `, words.length > 0 ? [normalized, wordPatterns] : [normalized]);
 
       if (rows.length > 0) {
         const data = rows[0];
