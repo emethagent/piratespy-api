@@ -10,10 +10,10 @@ const globalLimiter = rateLimit({
   keyGenerator: (req) => req.user?.id || req.ip,
 });
 
-// Auth: 10 attempts per 15 minutes per IP
+// Auth: 30 attempts per 15 minutes per IP (relaxed for team testing)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 30,
   message: { error: 'Too many auth attempts, try again later' },
 });
 
