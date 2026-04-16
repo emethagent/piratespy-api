@@ -10,6 +10,7 @@ const { globalLimiter } = require('./middleware/rateLimiter');
 const authRoutes = require('./routes/auth');
 const adsRoutes = require('./routes/ads');
 const adminRoutes = require('./routes/admin');
+const shopifyAppsRoutes = require('./routes/shopifyApps');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,6 +61,9 @@ app.post('/bootstrap', async (req, res) => {
 
 // Auth routes (no JWT required)
 app.use('/api/auth', authRoutes);
+
+// Public (app token only, no JWT required)
+app.use('/api/apps', shopifyAppsRoutes);
 
 // Protected routes (JWT required)
 app.use('/api/ads', verifyJWT, adsRoutes);

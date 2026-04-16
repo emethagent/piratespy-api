@@ -155,6 +155,30 @@ const MIGRATIONS = [
         applied_at TIMESTAMPTZ DEFAULT NOW()
       );
     `
+  },
+  {
+    name: '002_shopify_apps',
+    sql: `
+      CREATE TABLE IF NOT EXISTS shopify_apps (
+        id SERIAL PRIMARY KEY,
+        app_name TEXT NOT NULL,
+        app_url TEXT,
+        page_title TEXT,
+        review_count TEXT,
+        review_rating TEXT,
+        description TEXT,
+        prices TEXT[],
+        categories TEXT[],
+        logo_url TEXT,
+        developer_name TEXT,
+        developer_mail TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_shopify_apps_name ON shopify_apps(LOWER(app_name));
+      CREATE INDEX IF NOT EXISTS idx_shopify_apps_categories ON shopify_apps USING GIN(categories);
+    `
   }
 ];
 
