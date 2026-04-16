@@ -12,16 +12,25 @@ async function main() {
   console.log('=== Daily ads count started ===');
   console.log('Date:', new Date().toISOString());
 
-  // Get all unique bookmarked domains
+  // Get all unique domains to track:
+  // - bookmarked domains (user_bookmarks)
+  // - domains we already have history for (daily_ads_count)
   const { rows: domains } = await pool.query(`
-    SELECT DISTINCT d.domain
-    FROM user_bookmarks b
-    JOIN meta_domains d ON b.domain_id = d.id
-    WHERE d.domain IS NOT NULL AND d.domain != ''
-    ORDER BY d.domain
+    SELECT DISTINCT domain FROM (
+      SELECT d.domain
+      FROM user_bookmarks b
+      JOIN meta_domains d ON b.domain_id = d.id
+      WHERE d.domain IS NOT NULL AND d.domain != ''
+      UNION
+      SELECT DISTINCT domain
+      FROM daily_ads_count
+      WHERE domain IS NOT NULL AND domain != ''
+        AND created_at > NOW() - INTERVAL '60 days'
+    ) t
+    ORDER BY domain
   `);
 
-  console.log(`Found ${domains.length} unique bookmarked domains`);
+  console.log(`Found ${domains.length} unique domains to track`);
 
   let ok = 0, fail = 0;
   const start = Date.now();
