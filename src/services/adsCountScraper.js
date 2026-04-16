@@ -13,9 +13,12 @@ const IPROYAL_PORT = process.env.IPROYAL_PORT || '12321';
 
 function getProxyAgent(country = 'us') {
   const session = Math.random().toString(36).substring(2, 10);
-  const username = `${IPROYAL_USER}-country-${country}-session-${session}`;
-  const proxyUrl = `http://${username}:${IPROYAL_PASS}@${IPROYAL_HOST}:${IPROYAL_PORT}`;
-  return new ProxyAgent(proxyUrl);
+  const username = `${IPROYAL_USER}_country-${country}_session-${session}`;
+  const token = 'Basic ' + Buffer.from(`${username}:${IPROYAL_PASS}`).toString('base64');
+  return new ProxyAgent({
+    uri: `http://${IPROYAL_HOST}:${IPROYAL_PORT}`,
+    token,
+  });
 }
 
 async function fetchAdsCount(domain) {
