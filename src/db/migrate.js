@@ -157,6 +157,32 @@ const MIGRATIONS = [
     `
   },
   {
+    name: '003_user_bookmarks',
+    sql: `
+      CREATE TABLE IF NOT EXISTS user_bookmarks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        domain_id UUID NOT NULL REFERENCES meta_domains(id) ON DELETE CASCADE,
+        tags TEXT[] DEFAULT '{}',
+        notes TEXT,
+        notify_discord BOOLEAN DEFAULT FALSE,
+        notify_email BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, domain_id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_user_bookmarks_user ON user_bookmarks(user_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_user_bookmarks_domain ON user_bookmarks(domain_id);
+
+      -- Migrate existing data from user_followed_brands
+      INSERT INTO user_bookmarks (user_id, domain_id, notify_discord, notify_email, created_at)
+      SELECT user_id, domain_id, notify_discord, notify_email, created_at
+      FROM user_followed_brands
+      ON CONFLICT (user_id, domain_id) DO NOTHING;
+    `
+  },
+  {
     name: '002_shopify_apps',
     sql: `
       CREATE TABLE IF NOT EXISTS shopify_apps (
