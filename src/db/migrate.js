@@ -157,6 +157,24 @@ const MIGRATIONS = [
     `
   },
   {
+    name: '004_daily_ads_count',
+    sql: `
+      CREATE TABLE IF NOT EXISTS daily_ads_count (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        domain TEXT NOT NULL,
+        date DATE NOT NULL DEFAULT CURRENT_DATE,
+        ads_count INTEGER DEFAULT 0,
+        active_count INTEGER DEFAULT 0,
+        raw_html_snippet TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(domain, date)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_daily_ads_domain_date ON daily_ads_count(domain, date DESC);
+      CREATE INDEX IF NOT EXISTS idx_daily_ads_date ON daily_ads_count(date DESC);
+    `
+  },
+  {
     name: '003_user_bookmarks',
     sql: `
       CREATE TABLE IF NOT EXISTS user_bookmarks (

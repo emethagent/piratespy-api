@@ -12,6 +12,7 @@ const adsRoutes = require('./routes/ads');
 const adminRoutes = require('./routes/admin');
 const shopifyAppsRoutes = require('./routes/shopifyApps');
 const bookmarksRoutes = require('./routes/bookmarks');
+const adsCountRoutes = require('./routes/adsCount');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,6 +66,7 @@ app.use('/api/auth', authRoutes);
 
 // Public (app token only, no JWT required)
 app.use('/api/apps', shopifyAppsRoutes);
+app.use('/api/ads-count', adsCountRoutes);
 
 // Protected routes (JWT required)
 app.use('/api/ads', verifyJWT, adsRoutes);
