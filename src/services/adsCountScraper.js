@@ -11,10 +11,8 @@ const IPROYAL_PASS = process.env.IPROYAL_PASS || 'OyCsoblVVvZ0HG43';
 const IPROYAL_HOST = process.env.IPROYAL_HOST || 'geo.iproyal.com';
 const IPROYAL_PORT = process.env.IPROYAL_PORT || '12321';
 
-function getProxyAgent(country = 'us') {
-  const session = Math.random().toString(36).substring(2, 10);
-  const username = `${IPROYAL_USER}_country-${country}_session-${session}`;
-  const token = 'Basic ' + Buffer.from(`${username}:${IPROYAL_PASS}`).toString('base64');
+function getProxyAgent() {
+  const token = 'Basic ' + Buffer.from(`${IPROYAL_USER}:${IPROYAL_PASS}`).toString('base64');
   return new ProxyAgent({
     uri: `http://${IPROYAL_HOST}:${IPROYAL_PORT}`,
     token,
